@@ -62,12 +62,6 @@ function renderGlobalView(global_charts) {
 
     renderPlotlyChart('gl-chart-1', global_charts.ggr_volume);
 
-    // Plotly needs an empty container for top players since it was originally a table wrapper
-    const topCont = document.querySelector('.top-table-container');
-    if (topCont && topCont.querySelector('table')) {
-        topCont.innerHTML = '<div id="gl-chart-8" class="plot-container"></div>';
-    }
-
     renderPlotlyChart('gl-chart-2', global_charts.treemap);
     renderPlotlyChart('gl-chart-3', global_charts.profit_deposits);
     renderPlotlyChart('gl-chart-4', global_charts.house_risk);

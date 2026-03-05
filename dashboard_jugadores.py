@@ -39,9 +39,22 @@ def generate_dashboard(input_path, output_path):
         if "username" in df.columns:
             df = df.with_columns(pl.col("username").fill_null("Desconocido"))
         if "type_bet" in df.columns:
-            df = df.with_columns(pl.col("type_bet").fill_null("Otro"))
+            df = df.with_columns(
+                pl.when(pl.col("type_bet").str.contains("(?i)sistema")).then(pl.lit("Sistema"))
+                .when(pl.col("type_bet").str.contains("(?i)combinada|parlay")).then(pl.lit("Combinada"))
+                .when(pl.col("type_bet").str.contains("(?i)simple")).then(pl.lit("Simple"))
+                .when(pl.col("type_bet").str.contains("(?i)betbuilder|bet builder")).then(pl.lit("BetBuilder"))
+                .otherwise(pl.lit("Otros"))
+                .alias("type_bet")
+            )
         if "status_bet" in df.columns:
-            df = df.with_columns(pl.col("status_bet").fill_null("Desconocido").str.to_titlecase())
+            df = df.with_columns(
+                pl.when(pl.col("status_bet").str.contains("(?i)won|win|ganad")).then(pl.lit("Ganada"))
+                .when(pl.col("status_bet").str.contains("(?i)lost|loss|perdid")).then(pl.lit("Perdido"))
+                .when(pl.col("status_bet").str.contains("(?i)cashout|cash out")).then(pl.lit("CashOut"))
+                .otherwise(pl.lit("Otro"))
+                .alias("status_bet")
+            )
         if "group_name" in df.columns:
             df = df.with_columns(pl.col("group_name").fill_null("Sin Categoría"))
         else:
@@ -53,7 +66,7 @@ def generate_dashboard(input_path, output_path):
         ])
         
         df = df.with_columns(
-            pl.col("status_bet").str.contains("(?i)won|win").cast(pl.Int32).alias("won_flags")
+            (pl.col("status_bet") == "Ganada").cast(pl.Int32).alias("won_flags")
         )
 
         print("Guardando cache Parquet...")
@@ -71,13 +84,14 @@ def generate_dashboard(input_path, output_path):
     df_segments = df.group_by("group_name").agg([
         pl.col("ggr_usd").sum(),
         pl.col("deposits").sum(),
-        pl.count().alias("_count"),
+        pl.len().alias("_count"),
         pl.col("won_flags").sum()
     ]).fill_null(0).to_dicts()
 
-    # Global: Riesgo de la Casa (Status/Type)
-    df_house_risk = df.group_by(["type_bet", "status_bet"]).agg([
-        pl.count().alias("_count")
+    # Global: Riesgo de la Casa (House Profit)
+    df_house_risk = df.group_by("type_bet").agg([
+        (pl.when(pl.col("status_bet") == "Perdido").then(pl.col("amount_usd")).otherwise(0).sum() -
+         pl.when(pl.col("status_bet") == "Ganada").then(pl.col("amount_usd")).otherwise(0).sum()).alias("profit")
     ]).fill_null(0).to_dicts()
 
     # Global: Odds Histograma
@@ -112,10 +126,17 @@ def generate_dashboard(input_path, output_path):
             pl.col("amount_usd").sum()
         ]).to_dicts()[0]
         
-        df_p_risk = df_p.select(["amount_usd", "odds"]).head(100).to_dicts()
+        # --- FIXED AGGREGATION FOR RISK PROFILE ---
+        # Before: df_p.select(["amount_usd", "odds"]).head(100).to_dicts()
+        # Now: Aggregated by system (type_bet) with House Profit metric
+        df_p_risk = df_p.group_by("type_bet").agg([
+            (pl.when(pl.col("status_bet") == "Perdido").then(pl.col("amount_usd")).otherwise(0).sum() -
+             pl.when(pl.col("status_bet") == "Ganada").then(pl.col("amount_usd")).otherwise(0).sum()).alias("profit")
+        ]).rename({"type_bet": "system"}).to_dicts()
+        # ------------------------------------------
         
         p_pref = df_p.group_by("type_bet").agg([pl.col("amount_usd").sum()]).fill_null(0).to_dicts()
-        p_ticket = df_p.group_by("status_bet").agg([pl.count().alias("_count")]).fill_null(0).to_dicts()
+        p_ticket = df_p.group_by("status_bet").agg([pl.len().alias("_count")]).fill_null(0).to_dicts()
         
         players_data[username] = {
             "daily": p_daily,
@@ -152,16 +173,20 @@ def generate_dashboard(input_path, output_path):
 
     # Convertir DFs necesarios que no se convirtieron en dicts previamente, o list->dicts
     fig_ggr_volume = b_ggr_volume(df_daily)
-    fig_treemap = b_treemap(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.count().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
-    fig_profit_dep = b_profit_dep(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.count().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
-    fig_house_risk = b_house_risk(df.group_by(["type_bet", "status_bet"]).agg([pl.count().alias("_count")]).fill_null(0))
+    fig_treemap = b_treemap(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
+    fig_profit_dep = b_profit_dep(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
+    fig_house_risk = b_house_risk(df_house_risk)
     fig_odds_dist = b_odds_dist(odds_hist)
-    fig_winrate = b_winrate(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.count().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
-    fig_eff_scatter = b_eff_scatter(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.count().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
+    fig_winrate = b_winrate(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
+    fig_eff_scatter = b_eff_scatter(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
     fig_top_players = b_top_players(df.group_by("username").agg([pl.col("ggr_usd").sum()]).sort("ggr_usd", descending=True).head(10))
 
     players_charts = {}
     for uname, pdata in players_data.items():
+        # Debugging print to verify data structure
+        if len(pdata["risk"]) > 0:
+            print(f"Sample risk data for {uname}: {pdata['risk'][:1]}")
+            
         players_charts[uname] = {
             "pnl": fig_to_dict(b_pnl(pdata["daily"])),
             "turnover": fig_to_dict(b_turnover(pdata["turnover"])),

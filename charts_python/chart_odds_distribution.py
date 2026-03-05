@@ -11,15 +11,37 @@ def build_chart(odds_hist):
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
-        x=x_vals, y=y_vals,
-        marker=dict(color=paleta_corpo["sky500"], line=dict(width=0)),
+        x=x_vals,
+        y=y_vals,
+        marker=dict(
+            color=paleta_corpo.get("sky500", "#0EA5E9"),
+            line=dict(color='white', width=1)
+        ),
         opacity=0.9,
-        hovertemplate='<b>Frecuencia:</b> %{y:.4f}<extra></extra>'
+        hovertemplate="Cuota: <b>%{x:,.2f}</b><br>Frecuencia: <b>%{y:,.0f}</b><extra></extra>"
     ))
 
     layout = get_base_layout()
     layout.update(
-        yaxis=dict(title='', showgrid=True, gridcolor='#F1F5F9', zeroline=False, showline=False)
+        bargap=0.1,
+        xaxis=dict(
+            title="", 
+            showgrid=False, 
+            zeroline=False
+        ),
+        yaxis=dict(
+            title="", 
+            showgrid=False, 
+            gridcolor="#F1F5F9", 
+            zeroline=False, 
+            showline=False
+        ),
+        margin=dict(l=40, r=20, t=30, b=40),
+        hoverlabel=dict(
+            bgcolor="white",
+            bordercolor="#E2E8F0",
+            font=dict(family="Inter", color="#1F2937")
+        )
     )
     fig.update_layout(**layout)
     return fig

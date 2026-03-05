@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from charts_python.utils import paleta_corpo, get_base_layout
+from charts_python.utils import get_base_layout
 
 def build_chart(df_top_players):
     if len(df_top_players) == 0:
@@ -10,18 +10,30 @@ def build_chart(df_top_players):
     x_vals = df["ggr_usd"].to_list()
     y_vals = df["username"].to_list()
 
+    text_vals = [f"${v:,.0f}" for v in x_vals]
+
     fig = go.Figure(go.Bar(
-        x=x_vals, y=y_vals,
+        x=x_vals,
+        y=y_vals,
         orientation='h',
-        marker=dict(color='#3B82F6', line=dict(width=0)),
-        hovertemplate='<b>GGR:</b> $%{x:,.2f}<extra></extra>'
+        marker=dict(
+            color='#3B82F6',
+            opacity=0.9,
+            line=dict(width=1, color='white')
+        ),
+        text=text_vals,
+        textposition='inside',
+        textfont=dict(color='white', size=12, family='Inter'),
+        hovertemplate='<b>Jugador:</b> %{y}<br>GGR: <b>$%{x:,.2f}</b><extra></extra>'
     ))
 
     layout = get_base_layout()
     layout.update(
-        margin=dict(t=0, b=20, l=100, r=10),
-        yaxis=dict(showgrid=False, zeroline=False),
-        xaxis=dict(showgrid=True, gridcolor='#F1F5F9', zeroline=False)
+        height=380,
+        margin=dict(t=10, b=20, l=120, r=20),
+        yaxis=dict(showgrid=False, zeroline=False, automargin=True),
+        xaxis=dict(showgrid=True, gridcolor='#F1F5F9', zeroline=False, tickformat='$,.0s'),
+        hoverlabel=dict(bgcolor="white", bordercolor="#E2E8F0", font=dict(family="Inter", color="#1F2937"))
     )
     fig.update_layout(**layout)
     return fig

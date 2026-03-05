@@ -1,38 +1,26 @@
 import plotly.graph_objects as go
 from charts_python.utils import paleta_corpo, get_base_layout
-import polars as pl
 
 def build_chart(df_house_risk):
-    if len(df_house_risk) == 0:
+    if not df_house_risk or len(df_house_risk) == 0:
         return go.Figure()
-        
-    # pivot df to get Won, Lost, Cashout per type_bet
-    pivoted = df_house_risk.pivot(values="_count", index="type_bet", on="status_bet").fill_null(0)
-    
-    x_vals = pivoted["type_bet"].to_list()
-    won = pivoted["Won"].to_list() if "Won" in pivoted.columns else [0]*len(x_vals)
-    lost = pivoted["Lost"].to_list() if "Lost" in pivoted.columns else [0]*len(x_vals)
-    cashout = pivoted["Cashout"].to_list() if "Cashout" in pivoted.columns else [0]*len(x_vals)
 
-    fig = go.Figure()
-    
-    fig.add_trace(go.Bar(
-        x=x_vals, y=lost, name='Perdido',
-        marker=dict(color=paleta_corpo["crimson"], line=dict(width=0)),
-        hovertemplate='<b>Perdido:</b> %{y}<extra></extra>'
-    ))
-    fig.add_trace(go.Bar(
-        x=x_vals, y=won, name='Ganado',
-        marker=dict(color=paleta_corpo["emerald"], line=dict(width=0)),
-        hovertemplate='<b>Ganado:</b> %{y}<extra></extra>'
-    ))
-    fig.add_trace(go.Bar(
-        x=x_vals, y=cashout, name='CashOut',
-        marker=dict(color=paleta_corpo["amber"], line=dict(width=0)),
-        hovertemplate='<b>CashOut:</b> %{y}<extra></extra>'
+    x_vals = [d["type_bet"] for d in df_house_risk]
+    y_vals = [d["profit"] for d in df_house_risk]
+    colors = [paleta_corpo["emerald"] if v >= 0 else paleta_corpo["crimson"] for v in y_vals]
+
+    fig = go.Figure(go.Bar(
+        x=x_vals,
+        y=y_vals,
+        marker=dict(color=colors, opacity=0.9, line=dict(width=1, color='white')),
+        hovertemplate='<b>%{x}</b><br>House Profit: <b>$%{y:,.0f}</b><extra></extra>'
     ))
 
     layout = get_base_layout()
-    layout.update(barmode='stack')
+    layout.update(
+        yaxis=dict(title="", showgrid=True, gridcolor="#F1F5F9", zeroline=True, zerolinecolor="#94A3B8"),
+        xaxis=dict(title="", showgrid=False),
+        hoverlabel=dict(bgcolor="white", bordercolor="#E2E8F0", font=dict(family="Inter", color="#1F2937"))
+    )
     fig.update_layout(**layout)
     return fig
