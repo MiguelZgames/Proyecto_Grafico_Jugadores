@@ -10,10 +10,10 @@ function renderPlotlyChart(containerId, fig) {
         displaylogo: false
     };
 
-    Plotly.react(
-        containerId,
-        fig.data,
-        fig.layout,
-        config
-    );
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Limpiar estado previo para evitar herencia de layout/escalas
+    Plotly.purge(container);
+    Plotly.newPlot(containerId, fig.data, fig.layout, config);
 }

@@ -231,58 +231,170 @@
                 </div>
                 <div id="gl-chart-7" class="plot-container"></div>
             </div>
+
+            <div class="chart-card col-span-4">
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">💸</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">Retiros vs
+                            Depósitos</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Comparativa
+                                temporal entre depósitos y retiros para analizar el flujo de liquidez del
+                                sistema.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('withdrawals_vs_deposits_chart', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+                <div id="withdrawals_vs_deposits_chart" class="plot-container" style="min-height: 380px;"></div>
+            </div>
         </div>
 
         <!-- VISTA JUGADOR -->
         <div id="player-view" class="view-section">
 
-            <div class="chart-card col-span-3">
-                <div class="chart-header">
-                    <div class="chart-title" id="pv-title">Vista de Jugador: -</div>
-                </div>
-            </div>
-
+            <!-- Título del jugador — ancho completo -->
             <div class="chart-card col-span-2">
-                <div class="chart-header">
-                    <div class="chart-title">P&L Histórico: Profit vs Depósitos</div>
-                    <div class="tooltip-icon">i<span class="tooltip-text">Evolución temporal del beneficio/pérdida del
-                            jugador.</span></div>
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 0;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">👤</span>
+                        <div class="chart-title" id="pv-title" style="font-size: 1.1rem; color: var(--royal-blue);">
+                            Vista de Jugador: -</div>
+                    </div>
                 </div>
-                <div id="pl-chart-1" class="plot-container"></div>
             </div>
 
+            <!-- Gráfico 1: P&L Histórico — ancho completo -->
+            <div class="chart-card col-span-2">
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">📈</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">P&L Histórico:
+                            Profit vs Depósitos</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Evolución
+                                temporal del beneficio/pérdida del
+                                jugador.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('pl-chart-1', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+                <div id="pl-chart-1" class="plot-container" style="min-height: 380px;"></div>
+            </div>
+
+            <!-- Fila 2: Turnover + Perfil de Riesgo -->
             <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Turnover (Acumulado)</div>
-                    <div class="tooltip-icon">i<span class="tooltip-text">Comparativa rápida entre ingresos base y el
-                            volumen total arriesgado (rotación).</span></div>
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">🔄</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">Turnover
+                            (Acumulado)</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Relación entre
+                                depósitos y volumen apostado. El Turnover Ratio indica cuántas veces se reutiliza el
+                                dinero depositado.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('pl-chart-5', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
                 </div>
                 <div id="pl-chart-5" class="plot-container"></div>
             </div>
 
             <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Perfil de Riesgo (Cuota vs Monto)</div>
-                    <div class="tooltip-icon">i<span class="tooltip-text">Cada punto es un ticket evaluando la aversión
-                            o búsqueda de riesgo.</span></div>
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">⚠️</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">Perfil de Riesgo
+                            (Cuota vs Monto)</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Exposición
+                                financiera por sistema de juego y resultado de las apuestas.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('pl-chart-2', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
                 </div>
                 <div id="pl-chart-2" class="plot-container"></div>
             </div>
 
+            <!-- Fila 3: Preferencias + Efectividad -->
             <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Preferencias de Tipo de Apuesta</div>
-                    <div class="tooltip-icon">i<span class="tooltip-text">Porción de volumen apostado según
-                            modalidad.</span></div>
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">🎰</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">Preferencias de
+                            Tipo de Apuesta</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Distribución
+                                del monto apostado por tipo de apuesta. Identifica el comportamiento dominante del
+                                jugador.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('pl-chart-3', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
                 </div>
                 <div id="pl-chart-3" class="plot-container"></div>
             </div>
 
             <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Efectividad de Tickets</div>
-                    <div class="tooltip-icon">i<span class="tooltip-text">Distribución del destino final de los tickets
-                            operados.</span></div>
+                <div class="chart-header"
+                    style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-size:20px; margin-right: 8px;">🎯</span>
+                        <div class="chart-title" style="font-size: 1.1rem; color: var(--royal-blue);">Efectividad de
+                            Tickets</div>
+                        <div class="tooltip-icon" style="margin-left: 10px;">i<span class="tooltip-text">Distribución
+                                de resultados de los tickets: ganados, perdidos y cashout.</span></div>
+                    </div>
+                    <button class="btn-outline"
+                        style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                        onclick="Plotly.relayout('pl-chart-4', {'xaxis.autorange': true, 'yaxis.autorange': true})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset
+                    </button>
                 </div>
                 <div id="pl-chart-4" class="plot-container"></div>
             </div>

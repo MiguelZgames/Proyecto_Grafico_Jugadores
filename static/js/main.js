@@ -47,12 +47,14 @@ function updateDashboard() {
             const pvTitle = document.getElementById('pv-title');
             if (pvTitle) pvTitle.innerText = `Vista de Jugador: ${sp}`;
             renderPlayerView(sp);
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
         }
     } else {
         if (playerView) playerView.classList.remove('active');
         if (globalView) {
             setTimeout(() => globalView.classList.add('active'), 50);
             renderGlobalView(dashboardData.global_charts);
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
         }
     }
 }
@@ -69,6 +71,39 @@ function renderGlobalView(global_charts) {
     renderPlotlyChart('gl-chart-6', global_charts.winrate);
     renderPlotlyChart('gl-chart-7', global_charts.eff_scatter);
     renderPlotlyChart('gl-chart-8', global_charts.top_players);
+    renderPlotlyChart('withdrawals_vs_deposits_chart', global_charts.withdrawals_vs_deposits);
+
+    // Drill-down: click on efficiency scatter to explore segment detail
+    const effPlot = document.getElementById('gl-chart-7');
+    if (effPlot && dashboardData.segment_scatter) {
+        effPlot.on('plotly_click', function (data) {
+            const segment = data.points[0].text;
+            const segData = dashboardData.segment_scatter[segment];
+            if (!segData) return;
+
+            const drillFig = {
+                data: [{
+                    x: segData.x, y: segData.y, text: segData.text,
+                    mode: 'markers',
+                    marker: { size: 10, color: '#2563EB', opacity: 0.7, line: { color: 'white', width: 1.5 } },
+                    hovertemplate: '<b>%{text}</b><br>Depósitos: <b>$%{x:,.0f}</b><br>GGR: <b>$%{y:,.0f}</b><extra></extra>'
+                }],
+                layout: Object.assign({}, global_charts.eff_scatter.layout, {
+                    annotations: [{
+                        x: 0.5, y: 1.05, xref: 'paper', yref: 'paper',
+                        text: '<b>Segmento: ' + segment + '</b>  (doble click para volver)',
+                        showarrow: false, font: { size: 13, color: '#1E3A8A' }
+                    }],
+                    shapes: []
+                })
+            };
+            renderPlotlyChart('gl-chart-7', drillFig);
+        });
+
+        effPlot.on('plotly_doubleclick', function () {
+            renderPlotlyChart('gl-chart-7', global_charts.eff_scatter);
+        });
+    }
 }
 
 function renderPlayerView(username) {

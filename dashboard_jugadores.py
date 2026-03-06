@@ -77,7 +77,8 @@ def generate_dashboard(input_path, output_path):
     # Global: Daily (Evolución Temporal)
     df_daily = df.group_by("date").agg([
         pl.col("ggr_usd").sum(),
-        pl.col("amount_usd").sum()
+        pl.col("amount_usd").sum(),
+        pl.col("deposits").sum()
     ]).sort("date").fill_null(0)
 
     # Global: Treemap y Rentabilidad y Eficiencia
@@ -126,16 +127,13 @@ def generate_dashboard(input_path, output_path):
             pl.col("amount_usd").sum()
         ]).to_dicts()[0]
         
-        # --- FIXED AGGREGATION FOR RISK PROFILE ---
-        # Before: df_p.select(["amount_usd", "odds"]).head(100).to_dicts()
-        # Now: Aggregated by system (type_bet) with House Profit metric
-        df_p_risk = df_p.group_by("type_bet").agg([
-            (pl.when(pl.col("status_bet") == "Perdido").then(pl.col("amount_usd")).otherwise(0).sum() -
-             pl.when(pl.col("status_bet") == "Ganada").then(pl.col("amount_usd")).otherwise(0).sum()).alias("profit")
-        ]).rename({"type_bet": "system"}).to_dicts()
+        # --- RISK PROFILE: breakdown by system × status ---
+        df_p_risk = df_p.group_by(["type_bet", "status_bet"]).agg([
+            pl.col("amount_usd").sum()
+        ]).fill_null(0).rename({"type_bet": "system", "status_bet": "result"}).to_dicts()
         # ------------------------------------------
         
-        p_pref = df_p.group_by("type_bet").agg([pl.col("amount_usd").sum()]).fill_null(0).to_dicts()
+        p_pref = df_p.group_by("type_bet").agg([pl.col("amount_usd").sum(), pl.len().alias("_count")]).fill_null(0).to_dicts()
         p_ticket = df_p.group_by("status_bet").agg([pl.len().alias("_count")]).fill_null(0).to_dicts()
         
         players_data[username] = {
@@ -161,6 +159,7 @@ def generate_dashboard(input_path, output_path):
     from charts_python.chart_efficiency_scatter import build_chart as b_eff_scatter
     from charts_python.chart_top_players import build_chart as b_top_players
     from charts_python.chart_winrate_heatmap import build_chart as b_winrate
+    from charts_python.chart_withdrawals_vs_deposits import build_chart as b_withdrawals
 
     from charts_python.player_pnl import build_chart as b_pnl
     from charts_python.player_turnover import build_chart as b_turnover
@@ -173,6 +172,7 @@ def generate_dashboard(input_path, output_path):
 
     # Convertir DFs necesarios que no se convirtieron en dicts previamente, o list->dicts
     fig_ggr_volume = b_ggr_volume(df_daily)
+    fig_withdrawals = b_withdrawals(df_daily)
     fig_treemap = b_treemap(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
     fig_profit_dep = b_profit_dep(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
     fig_house_risk = b_house_risk(df_house_risk)
@@ -180,6 +180,18 @@ def generate_dashboard(input_path, output_path):
     fig_winrate = b_winrate(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
     fig_eff_scatter = b_eff_scatter(df.group_by("group_name").agg([pl.col("ggr_usd").sum(), pl.col("deposits").sum(), pl.len().alias("_count"), pl.col("won_flags").sum()]).fill_null(0))
     fig_top_players = b_top_players(df.group_by("username").agg([pl.col("ggr_usd").sum()]).sort("ggr_usd", descending=True).head(10))
+
+    # Drill-down: per-segment scatter data (deposits vs GGR by user)
+    segment_scatter_data = {}
+    for gn in groups:
+        df_seg = df.filter(pl.col("group_name") == gn).group_by("username").agg([
+            pl.col("deposits").sum(), pl.col("ggr_usd").sum()
+        ]).fill_null(0)
+        segment_scatter_data[gn] = {
+            "x": df_seg["deposits"].to_list(),
+            "y": df_seg["ggr_usd"].to_list(),
+            "text": df_seg["username"].to_list()
+        }
 
     players_charts = {}
     for uname, pdata in players_data.items():
@@ -205,8 +217,10 @@ def generate_dashboard(input_path, output_path):
             "odds_dist": fig_to_dict(fig_odds_dist),
             "winrate": fig_to_dict(fig_winrate),
             "eff_scatter": fig_to_dict(fig_eff_scatter),
-            "top_players": fig_to_dict(fig_top_players)
+            "top_players": fig_to_dict(fig_top_players),
+            "withdrawals_vs_deposits": fig_to_dict(fig_withdrawals)
         },
+        "segment_scatter": segment_scatter_data,
         "players_charts": players_charts
     }
 
