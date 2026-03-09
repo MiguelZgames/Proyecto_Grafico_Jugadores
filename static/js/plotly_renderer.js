@@ -7,7 +7,8 @@ function renderPlotlyChart(containerId, fig) {
     const config = {
         responsive: true,
         displayModeBar: false,
-        displaylogo: false
+        displaylogo: false,
+        doubleClick: 'reset'
     };
 
     const container = document.getElementById(containerId);

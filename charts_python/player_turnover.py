@@ -1,61 +1,100 @@
 import plotly.graph_objects as go
-from charts_python.utils import paleta_corpo, get_base_layout
+from charts_python.utils import PRIMARY_COLOR, NEUTRAL_COLOR, get_base_layout
 
-def build_chart(p_turnover):
-    if not p_turnover:
+def build_chart(player_turnover_data):
+    if not player_turnover_data:
         return go.Figure()
 
-    tot_dep = p_turnover.get("deposits", 0)
-    tot_apo = p_turnover.get("amount_usd", 0)
-    ratio = tot_apo / tot_dep if tot_dep > 0 else 0
+    # Data preparation & Derived metrics
+    total_deposits = player_turnover_data.get("deposits", 0)
+    total_bet_amount = player_turnover_data.get("amount_usd", 0)
+    
+    turnover_ratio = (total_bet_amount / total_deposits) if total_deposits > 0 else 0
 
-    fig = go.Figure()
+    # Chart traces
+    figure_object = go.Figure()
 
-    # Apostado (primero, barra más larga)
-    fig.add_trace(go.Bar(
-        x=[tot_apo], y=['Apostado'], name='Apostado',
-        orientation='h', marker=dict(color=paleta_corpo["royalBlue"], cornerradius=4),
-        text=[f'${tot_apo:,.0f}'], textposition='inside', textfont=dict(color='white', size=13, family='Inter'),
+    # Apostado (Volumen apostado explícitamente es Slate Blue por las reglas)
+    bar_amount_bet = go.Bar(
+        x=[total_bet_amount], 
+        y=['Apostado'], 
+        name='Apostado',
+        orientation='h', 
+        marker=dict(color="#334155", cornerradius=4),
+        text=[f'${total_bet_amount:,.0f}'], 
+        textposition='inside', 
+        textfont=dict(color='white', size=13, family='Inter'),
         hovertemplate="<b>Volumen Apostado</b><br>Dinero total utilizado en apuestas<br><b>$%{x:,.0f}</b><extra></extra>"
-    ))
+    )
+    figure_object.add_trace(bar_amount_bet)
 
-    # Depósitos (segundo, barra más corta)
-    fig.add_trace(go.Bar(
-        x=[tot_dep], y=['Depósitos'], name='Depósitos',
-        orientation='h', marker=dict(color=paleta_corpo["teal"], cornerradius=4),
-        text=[f'${tot_dep:,.0f}'], textposition='inside', textfont=dict(color='white', size=13, family='Inter'),
+    # Depósitos (Referencia Principal de capital)
+    bar_amount_deposits = go.Bar(
+        x=[total_deposits], 
+        y=['Depósitos'], 
+        name='Depósitos',
+        orientation='h', 
+        marker=dict(color="#1E3A8A", cornerradius=4),
+        text=[f'${total_deposits:,.0f}'], 
+        textposition='inside', 
+        textfont=dict(color='white', size=13, family='Inter'),
         hovertemplate="<b>Depósitos Totales</b><br>Dinero total depositado en la plataforma<br><b>$%{x:,.0f}</b><extra></extra>"
-    ))
+    )
+    figure_object.add_trace(bar_amount_deposits)
 
-    ratio_text = f"Turnover: {ratio:.1f}x"
-    insight = f"Cada dólar depositado se apuesta ~{ratio:.1f} veces"
+    # Layout configuration
+    ratio_text = f"Turnover: {turnover_ratio:.1f}x"
+    insight_text = f"Cada dólar depositado se apuesta ~{turnover_ratio:.1f} veces"
 
-    layout = get_base_layout()
-    layout.update(
-        autosize=True, height=280,
-        barmode='group', bargap=0.35,
+    chart_layout = get_base_layout()
+    chart_layout.update(
+        autosize=True, 
+        height=280,
+        barmode='group', 
+        bargap=0.35,
         margin=dict(l=20, r=20, t=50, b=30),
         xaxis=dict(showgrid=False, showticklabels=False, zeroline=False),
-        yaxis=dict(showgrid=False, zeroline=False, automargin=True,
-                   tickfont=dict(size=12, color='#475569', family='Inter')),
-        hoverlabel=dict(bgcolor="white", bordercolor="#E2E8F0",
-                        font=dict(family="Inter", size=12, color="#1F2937")),
-        legend=dict(orientation='h', y=1.15, x=0.5, xanchor='center',
-                    font=dict(size=11, color='#64748b')),
+        yaxis=dict(
+            showgrid=False, 
+            zeroline=False, 
+            automargin=True,
+            tickfont=dict(size=12, color='#475569', family='Inter')
+        ),
+        hoverlabel=dict(
+            bgcolor="white", 
+            bordercolor="#E2E8F0",
+            font=dict(family="Inter", size=12, color="#1F2937")
+        ),
+        legend=dict(
+            orientation='h', 
+            y=1.15, 
+            x=0.5, 
+            xanchor='center',
+            font=dict(size=11, color='#64748b')
+        ),
         annotations=[
             dict(
-                x=0.98, y=1.12, xref='paper', yref='paper',
+                x=0.98, 
+                y=1.12, 
+                xref='paper', 
+                yref='paper',
                 text=f"<b>{ratio_text}</b>",
-                showarrow=False, font=dict(size=18, color=paleta_corpo["royalBlue"], family='Inter'),
+                showarrow=False, 
+                font=dict(size=18, color="#1E3A8A", family='Inter'),
                 xanchor='right'
             ),
             dict(
-                x=0.5, y=-0.12, xref='paper', yref='paper',
-                text=f"<i>{insight}</i>",
-                showarrow=False, font=dict(size=11, color='#94A3B8', family='Inter'),
+                x=0.5, 
+                y=-0.12, 
+                xref='paper', 
+                yref='paper',
+                text=f"<i>{insight_text}</i>",
+                showarrow=False, 
+                font=dict(size=11, color='#94A3B8', family='Inter'),
                 xanchor='center'
             )
         ]
     )
-    fig.update_layout(**layout)
-    return fig
+    figure_object.update_layout(**chart_layout)
+
+    return figure_object

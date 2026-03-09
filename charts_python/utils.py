@@ -10,6 +10,11 @@ paleta_corpo = {
     "slate": "#64748B"
 }
 
+# Corporate Core Colors
+PRIMARY_COLOR = "#1E3A8A"   # Royal Blue
+NEUTRAL_COLOR = "#94A3B8"   # Slate Blue
+NEGATIVE_COLOR = "#E11D48"  # Crimson
+
 def get_base_layout():
     return dict(
         paper_bgcolor='rgba(0,0,0,0)',

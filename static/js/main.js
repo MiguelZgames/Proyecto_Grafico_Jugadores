@@ -22,10 +22,10 @@ function initDashboard() {
     }
 
     // Filtros deshabilitados
-    const mF = document.getElementById('filter-month');
-    const gF = document.getElementById('filter-group_name');
-    if (mF) { mF.disabled = true; mF.title = "Filtro deshabilitado: Datos optimizados a nivel global"; }
-    if (gF) { gF.disabled = true; gF.title = "Filtro deshabilitado: Datos optimizados a nivel global"; }
+    const monthFilterElement = document.getElementById('filter-month');
+    const groupFilterElement = document.getElementById('filter-group_name');
+    if (monthFilterElement) { monthFilterElement.disabled = true; monthFilterElement.title = "Filtro deshabilitado: Datos optimizados a nivel global"; }
+    if (groupFilterElement) { groupFilterElement.disabled = true; groupFilterElement.title = "Filtro deshabilitado: Datos optimizados a nivel global"; }
 
     document.getElementById('btn-reset').addEventListener('click', () => {
         const sel = document.getElementById('filter-player');
@@ -35,24 +35,24 @@ function initDashboard() {
 }
 
 function updateDashboard() {
-    const playerFilter = document.getElementById('filter-player');
-    const sp = playerFilter ? playerFilter.value : 'ALL';
-    const globalView = document.getElementById('global-view');
-    const playerView = document.getElementById('player-view');
+    const playerFilterDropdown = document.getElementById('filter-player');
+    const selectedPlayer = playerFilterDropdown ? playerFilterDropdown.value : 'ALL';
+    const globalViewContainer = document.getElementById('global-view');
+    const playerViewContainer = document.getElementById('player-view');
 
-    if (sp !== 'ALL' && dashboardData.players_charts && dashboardData.players_charts[sp]) {
-        if (globalView) globalView.classList.remove('active');
-        if (playerView) {
-            setTimeout(() => playerView.classList.add('active'), 50);
-            const pvTitle = document.getElementById('pv-title');
-            if (pvTitle) pvTitle.innerText = `Vista de Jugador: ${sp}`;
-            renderPlayerView(sp);
+    if (selectedPlayer !== 'ALL' && dashboardData.players_charts && dashboardData.players_charts[selectedPlayer]) {
+        if (globalViewContainer) globalViewContainer.classList.remove('active');
+        if (playerViewContainer) {
+            setTimeout(() => playerViewContainer.classList.add('active'), 50);
+            const playerViewTitle = document.getElementById('pv-title');
+            if (playerViewTitle) playerViewTitle.innerText = `Vista de Jugador: ${selectedPlayer}`;
+            renderPlayerView(selectedPlayer);
             setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
         }
     } else {
-        if (playerView) playerView.classList.remove('active');
-        if (globalView) {
-            setTimeout(() => globalView.classList.add('active'), 50);
+        if (playerViewContainer) playerViewContainer.classList.remove('active');
+        if (globalViewContainer) {
+            setTimeout(() => globalViewContainer.classList.add('active'), 50);
             renderGlobalView(dashboardData.global_charts);
             setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
         }
@@ -74,24 +74,30 @@ function renderGlobalView(global_charts) {
     renderPlotlyChart('withdrawals_vs_deposits_chart', global_charts.withdrawals_vs_deposits);
 
     // Drill-down: click on efficiency scatter to explore segment detail
-    const effPlot = document.getElementById('gl-chart-7');
-    if (effPlot && dashboardData.segment_scatter) {
-        effPlot.on('plotly_click', function (data) {
-            const segment = data.points[0].text;
-            const segData = dashboardData.segment_scatter[segment];
-            if (!segData) return;
+    const efficiencyScatterPlot = document.getElementById('gl-chart-7');
+    if (efficiencyScatterPlot && dashboardData.segment_scatter) {
+        efficiencyScatterPlot.on('plotly_click', function (data) {
+            const segmentName = data.points[0].text;
+            const segmentScatterData = dashboardData.segment_scatter[segmentName];
+            if (!segmentScatterData) return;
+
+            const pointColors = segmentScatterData.y.map(ggr => {
+                if (ggr > 0) return '#1E3A8A';
+                if (ggr < 0) return '#E11D48';
+                return '#94A3B8';
+            });
 
             const drillFig = {
                 data: [{
-                    x: segData.x, y: segData.y, text: segData.text,
+                    x: segmentScatterData.x, y: segmentScatterData.y, text: segmentScatterData.text,
                     mode: 'markers',
-                    marker: { size: 10, color: '#2563EB', opacity: 0.7, line: { color: 'white', width: 1.5 } },
+                    marker: { size: 6, color: pointColors, opacity: 0.85, line: { color: 'white', width: 1.0 } },
                     hovertemplate: '<b>%{text}</b><br>Depósitos: <b>$%{x:,.0f}</b><br>GGR: <b>$%{y:,.0f}</b><extra></extra>'
                 }],
                 layout: Object.assign({}, global_charts.eff_scatter.layout, {
                     annotations: [{
                         x: 0.5, y: 1.05, xref: 'paper', yref: 'paper',
-                        text: '<b>Segmento: ' + segment + '</b>  (doble click para volver)',
+                        text: '<b>Segmento: ' + segmentName + '</b>  (doble click para volver)',
                         showarrow: false, font: { size: 13, color: '#1E3A8A' }
                     }],
                     shapes: []
@@ -100,7 +106,7 @@ function renderGlobalView(global_charts) {
             renderPlotlyChart('gl-chart-7', drillFig);
         });
 
-        effPlot.on('plotly_doubleclick', function () {
+        efficiencyScatterPlot.on('plotly_doubleclick', function () {
             renderPlotlyChart('gl-chart-7', global_charts.eff_scatter);
         });
     }
@@ -109,13 +115,13 @@ function renderGlobalView(global_charts) {
 function renderPlayerView(username) {
     if (!dashboardData.players_charts || !dashboardData.players_charts[username]) return;
 
-    const pc = dashboardData.players_charts[username];
+    const playerChartsData = dashboardData.players_charts[username];
 
-    renderPlotlyChart('pl-chart-1', pc.pnl);
-    renderPlotlyChart('pl-chart-2', pc.risk);
-    renderPlotlyChart('pl-chart-3', pc.preferences);
-    renderPlotlyChart('pl-chart-4', pc.tickets);
-    renderPlotlyChart('pl-chart-5', pc.turnover);
+    renderPlotlyChart('pl-chart-1', playerChartsData.pnl);
+    renderPlotlyChart('pl-chart-2', playerChartsData.risk);
+    renderPlotlyChart('pl-chart-3', playerChartsData.preferences);
+    renderPlotlyChart('pl-chart-4', playerChartsData.tickets);
+    renderPlotlyChart('pl-chart-5', playerChartsData.turnover);
 }
 
 function initPlayerSelect(players, defaultPlayer) {
@@ -133,5 +139,11 @@ function initPlayerSelect(players, defaultPlayer) {
 function resetTreemap() {
     if (dashboardData.global_charts) {
         renderPlotlyChart('gl-chart-2', dashboardData.global_charts.treemap);
+    }
+}
+
+function resetEfficiencyScatter() {
+    if (dashboardData.global_charts) {
+        renderPlotlyChart('gl-chart-7', dashboardData.global_charts.eff_scatter);
     }
 }

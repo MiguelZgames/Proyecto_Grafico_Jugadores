@@ -2,148 +2,94 @@ import numpy as np
 import plotly.graph_objects as go
 from charts_python.utils import get_base_layout
 
-def build_chart(df_segments):
+def build_chart(dataframe_segments):
 
-    if len(df_segments) == 0:
+    if len(dataframe_segments) == 0:
         return go.Figure()
 
-    x = df_segments["deposits"].to_list()
-    y = df_segments["ggr_usd"].to_list()
-    segments = df_segments["group_name"].to_list()
+    # Data preparation
+    segment_deposit_values = dataframe_segments["deposits"].to_list()
+    segment_ggr_values = dataframe_segments["ggr_usd"].to_list()
+    segment_labels = dataframe_segments["group_name"].to_list()
 
-    if len(x) == 0:
+    if len(segment_deposit_values) == 0:
         return go.Figure()
 
-    x_np = np.array(x)
-    y_np = np.array(y)
+    deposits_array = np.array(segment_deposit_values)
+    ggr_array = np.array(segment_ggr_values)
 
-    if len(x_np) > 1:
-        slope, intercept = np.polyfit(x_np, y_np, 1)
+    # Derived metrics
+    segment_roi_values = [
+        (g / d) if d > 0 else 0 
+        for g, d in zip(segment_ggr_values, segment_deposit_values)
+    ]
+    hover_custom_data = list(zip(segment_ggr_values, segment_deposit_values, segment_roi_values))
+
+    if len(deposits_array) > 1:
+        trend_slope, trend_intercept = np.polyfit(deposits_array, ggr_array, 1)
     else:
-        slope, intercept = 0, 0
-    x_trend = np.linspace(min(x_np), max(x_np), 100)
-    y_trend = slope * x_trend + intercept
+        trend_slope, trend_intercept = 0, 0
+        
+    trend_x_values = np.linspace(min(deposits_array), max(deposits_array), 100)
+    trend_y_values = trend_slope * trend_x_values + trend_intercept
 
-    if slope > 0:
+    if trend_slope > 0:
         trend_text = "Tendencia positiva: más depósitos generan mayor GGR"
-    elif slope < 0:
-        trend_text = "Tendencia negativa: más depósitos no generan mayor GGR"
+    elif trend_slope < 0:
+        trend_text = "Tendencia negative: más depósitos no generan mayor GGR"
     else:
         trend_text = "Tendencia estable: sin correlación clara"
 
-    # Mejora 2 — Destacar segmento con mayor GGR
-    highlight_idx = int(np.argmax(y_np))
-    sizes = [18] * len(x)
-    sizes[highlight_idx] = 28
+    highlight_index = int(np.argmax(ggr_array))
+    point_sizes = [16] * len(segment_deposit_values)
+    point_sizes[highlight_index] = 26
+    
+    color_royal_blue = "#1E3A8A"
+    color_slate_blue = "#94A3B8"
+    color_crimson = "#E11D48"
 
-    fig = go.Figure()
+    point_colors = [color_royal_blue if g >= 0 else color_crimson for g in segment_ggr_values]
 
-    # Mejora 1 — Scatter con jerarquía visual y opacidad reducida
-    fig.add_trace(go.Scatter(
-        x=x,
-        y=y,
-        mode="markers",
-        marker=dict(
-            size=sizes,
-            color=y,
-            coloraxis="coloraxis",
-            opacity=0.65,
-            line=dict(color="white", width=2)
-        ),
-        text=segments,
-        # Mejora 5 — Tooltip mejorado
-        hovertemplate=
-        "<b>Segmento:</b> %{text}<br>" +
-        "<b>Depósitos:</b> $%{x:,.0f}<br>" +
-        "<b>GGR:</b> $%{y:,.0f}<br>" +
-        "<i>Conversión de depósitos en ingresos</i><extra></extra>"
-    ))
+    # Chart traces
+    figure_object = go.Figure()
 
-    # Mejora 3 — Tendencia más visible
-    fig.add_trace(go.Scatter(
-        x=x_trend,
-        y=y_trend,
-        mode="lines",
-        line=dict(
-            color="#1D4ED8",
-            dash="dash",
-            width=4
-        ),
-        name="Tendencia"
-    ))
-
-    layout = get_base_layout()
-
-    # Mejora 4 — Cuadrante analítico (línea vertical en promedio depósitos)
-    avg_x = float(np.mean(x_np))
-
-    layout.update(
-
-        height=420,
-
-        coloraxis=dict(
-            colorscale="RdYlGn",
-            cmin=min(y),
-            cmax=max(y),
-            cmid=0,
-            showscale=False
-        ),
-
-        xaxis=dict(
-            title="Depósitos (USD)",
-            showgrid=False
-        ),
-
-        yaxis=dict(
-            title="GGR (USD)",
-            showgrid=False
-        ),
-
-        shapes=[
-            dict(
-                type="line",
-                x0=min(x),
-                x1=max(x),
-                y0=0,
-                y1=0,
-                line=dict(
-                    color="#94A3B8",
-                    dash="dash"
-                )
-            ),
-            dict(
-                type="line",
-                x0=avg_x,
-                x1=avg_x,
-                y0=min(y),
-                y1=max(y),
-                line=dict(
-                    color="#CBD5E1",
-                    dash="dot"
-                )
-            )
-        ],
-
-        annotations=[
-            dict(
-                x=0.02,
-                y=0.95,
-                xref="paper",
-                yref="paper",
-                text=trend_text,
-                showarrow=False,
-                font=dict(size=12, color="#475569"),
-                align="left"
-            )
-        ],
-
-        hoverlabel=dict(
-            bgcolor="white",
-            bordercolor="#E2E8F0",
-            font=dict(color="#1F2937", family="Inter", size=12)
-        )
+    hover_template = (
+        "<b>Segmento:</b> %{text}<br>"
+        "<b>GGR:</b> $%{customdata[0]:,.0f}<br>"
+        "<b>Depósitos:</b> $%{customdata[1]:,.0f}<br>"
+        "<b>ROI:</b> %{customdata[2]:.1%}<extra></extra>"
     )
 
-    fig.update_layout(**layout)
+    scatter_trace = go.Scatter(x=segment_deposit_values, y=segment_ggr_values, mode="markers",
+        marker=dict(size=point_sizes, color=point_colors, opacity=0.85, line=dict(color="white", width=1.5)),
+        text=segment_labels, customdata=hover_custom_data, hovertemplate=hover_template, name="Segmentos")
+    figure_object.add_trace(scatter_trace)
 
-    return fig
+    trend_trace = go.Scatter(x=trend_x_values, y=trend_y_values, mode="lines",
+        line=dict(color=color_slate_blue, dash="dash", width=3), name="Tendencia")
+    figure_object.add_trace(trend_trace)
+
+    # Layout configuration
+    average_deposits = float(np.mean(deposits_array))
+    
+    chart_layout = get_base_layout()
+    chart_layout.update(height=420, margin=dict(t=30, b=40, l=60, r=20),
+        xaxis=dict(title="Depósitos (USD)", showgrid=False, showspikes=False),
+        yaxis=dict(title="GGR (USD)", showgrid=False, showspikes=False),
+        shapes=[
+            dict(type="line", x0=min(segment_deposit_values), x1=max(segment_deposit_values), y0=0, y1=0,
+                line=dict(color=color_slate_blue, dash="dash")
+            ),
+            dict(type="line", x0=average_deposits, x1=average_deposits, y0=min(segment_ggr_values), y1=max(segment_ggr_values),
+                line=dict(color="#CBD5E1", dash="dot")
+            )
+        ],
+        annotations=[dict(x=0.02, y=0.98, xref="paper", yref="paper", text=trend_text, showarrow=False,
+            font=dict(size=12, color="#475569"), align="left")],
+        hoverlabel=dict(bgcolor="white", bordercolor="#E2E8F0", font=dict(color="#1F2937", family="Inter", size=12)),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    figure_object.update_layout(**chart_layout)
+
+    return figure_object

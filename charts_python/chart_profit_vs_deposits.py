@@ -6,43 +6,59 @@ def build_chart(df_segments):
     if len(df_segments) == 0:
         return go.Figure()
 
-    # 1. Ordenar por deposits descendente y 2. Calcular ROI
+    # Data preparation
     df = df_segments.sort("deposits", descending=True).with_columns(
         (pl.col("ggr_usd") / pl.col("deposits")).alias("roi")
     )
 
-    x_vals = df["group_name"].to_list()
-    y_ggr = df["ggr_usd"].to_list()
-    y_dep = df["deposits"].to_list()
-    roi_vals = df["roi"].to_list()
+    segment_names = df["group_name"].to_list()
+    ggr_values = df["ggr_usd"].to_list()
+    deposit_values = df["deposits"].to_list()
+    roi_values = df["roi"].to_list()
 
-    # Datos para tooltip: [GGR, Depósitos, ROI]
-    custom_data = list(zip(y_ggr, y_dep, roi_vals))
+    custom_data = list(zip(ggr_values, deposit_values, roi_values))
+
+    # Visual configurations
+    color_royal_blue = "#1E3A8A"
+    color_slate_blue = "#94A3B8"
+    color_crimson = "#E11D48"
+
+    ggr_bar_colors = [color_royal_blue if v >= 0 else color_crimson for v in ggr_values]
+    deposit_bar_color = color_slate_blue
+
+    bar_border_style = dict(width=0.6, color="rgba(0,0,0,0.15)")
     
-    # Tooltip con formato profesional
-    hovertemplate = (
+    hover_label_style = dict(
+        bgcolor="white",
+        bordercolor="#E2E8F0",
+        font=dict(family="Inter", color="#2D3748")
+    )
+
+    hover_template = (
         "<b>Segmento:</b> %{x}<br>" +
         "<b>GGR:</b> $%{customdata[0]:,.0f}<br>" +
         "<b>Depósitos:</b> $%{customdata[1]:,.0f}<br>" +
         "<b>ROI:</b> %{customdata[2]:.1%}<extra></extra>"
     )
 
+    # Figure initialization
     fig = go.Figure()
 
-    # Traza GGR
+    # GGR Trace
     fig.add_trace(go.Bar(
-        x=x_vals, y=y_ggr, name='GGR',
-        marker=dict(color=paleta_corpo["emerald"]),
-        customdata=custom_data, hovertemplate=hovertemplate
+        x=segment_names, y=ggr_values, name='GGR',
+        marker=dict(color=ggr_bar_colors, line=bar_border_style),
+        customdata=custom_data, hovertemplate=hover_template
     ))
 
-    # Traza Depósitos
+    # Deposits Trace
     fig.add_trace(go.Bar(
-        x=x_vals, y=y_dep, name='Depósitos',
-        marker=dict(color=paleta_corpo["teal"]),
-        customdata=custom_data, hovertemplate=hovertemplate
+        x=segment_names, y=deposit_values, name='Depósitos',
+        marker=dict(color=deposit_bar_color, line=bar_border_style),
+        customdata=custom_data, hovertemplate=hover_template
     ))
 
+    # Layout configuration
     layout = get_base_layout()
     layout.update(
         barmode='group', 
@@ -57,11 +73,9 @@ def build_chart(df_segments):
             xanchor="right",
             x=1
         ),
-        hoverlabel=dict(
-            bgcolor="white",
-            bordercolor="#E2E8F0",
-            font=dict(family="Inter", color="#2D3748")
-        )
+        hoverlabel=hover_label_style
     )
+    
     fig.update_layout(**layout)
+    
     return fig
