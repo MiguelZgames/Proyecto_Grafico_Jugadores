@@ -78,7 +78,8 @@ def generate_dashboard(input_path, output_path):
     dataframe_daily = dataframe_players.group_by("date").agg([
         pl.col("ggr_usd").sum(),
         pl.col("amount_usd").sum(),
-        pl.col("deposits").sum()
+        pl.col("deposits").sum(),
+        pl.col("withdrawal").sum()
     ]).sort("date").fill_null(0)
 
     # Global: Treemap y Rentabilidad y Eficiencia

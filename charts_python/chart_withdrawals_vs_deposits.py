@@ -8,6 +8,7 @@ def build_chart(dataframe_daily):
     # Data preparation
     date_values = dataframe_daily["date"].to_list()
     deposit_values = dataframe_daily["deposits"].to_list()
+    withdrawal_values = dataframe_daily["withdrawal"].to_list()
 
     # Derived metrics
     number_of_points = len(date_values)
@@ -54,7 +55,7 @@ def build_chart(dataframe_daily):
     # Retiros (Métrica principal en este contexto) -> Royal Blue
     withdrawals_trace = go.Scatter(
         x=date_values, 
-        y=deposit_values,  # Note: The original code used y_dep for Retiros as well, preserving logic exactly.
+        y=withdrawal_values,  
         name='Retiros', 
         mode='lines+markers',
         line=dict(color=PRIMARY_COLOR, width=2, shape='spline'),
